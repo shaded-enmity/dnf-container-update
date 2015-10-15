@@ -21,7 +21,7 @@ printf "Updating container %s (image: '%s', pid: '%s')\n" ${CONTAINER} ${IMAGE} 
 
 # store dnf output in temp file
 TMPFILE=$(mktemp)
-dnf --installroot=${CROOT} --config=${CROOT}etc/dnf/dnf.conf update | tee ${TMPFILE}
+dnf --setopt='tsflags=noscripts' --installroot=${CROOT} --config=${CROOT}etc/dnf/dnf.conf update | tee ${TMPFILE}
 
 # commit only if we changed the file system
 GG=$(grep -q "Nothing to do." ${TMPFILE})
