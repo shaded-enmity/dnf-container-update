@@ -1,0 +1,31 @@
+#!/bin/bash
+# dnf-container-update 
+# Pavel Odvody <podvody@redhat.com> 2015 (C)
+#
+# Released under GNU/GPL 2.0
+
+# usage strings
+[[ "$1" = "-h" || "$1" = "--help" ]] && { echo "Usage:" $(basename $0) "CONTAINER"; exit 0; }
+[[ "$#" -gt "0" ]] || { echo 'Please specify name or container id'; exit 1; }
+
+# bail immediately
+set -ex
+
+# get container root
+CONTAINER=$1
+IMAGE=$(docker inspect --format='{{ .Config.Image }}' ${CONTAINER})
+CPID=$(docker top ${CONTAINER} eo pid | tail -n1)
+CROOT=/proc/${CPID}/root/
+
+printf "Updating container %s (image: '%s', pid: '%s')\n" ${CONTAINER} ${IMAGE} ${CPID}
+
+# store dnf output in temp file
+TMPFILE=$(mktemp)
+dnf --installroot=${CROOT} --config=${CROOT}etc/dnf/dnf.conf update | tee ${TMPFILE}
+
+# commit only if we changed the file system
+GG=$(grep -q "Nothing to do." ${TMPFILE})
+rm ${TMPFILE}
+if [ ! "${GG}" = "" ]; then
+  docker commit ${CONTAINER} ${IMAGE}
+fi
