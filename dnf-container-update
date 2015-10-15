@@ -14,7 +14,7 @@ set -ex
 # get container root
 CONTAINER=$1
 IMAGE=$(docker inspect --format='{{ .Config.Image }}' ${CONTAINER})
-CPID=$(docker top ${CONTAINER} eo pid | tail -n1)
+CPID=$(docker inspect --format='{{ .State.Pid }}' ${CONTAINER})
 CROOT=/proc/${CPID}/root/
 
 printf "Updating container %s (image: '%s', pid: '%s')\n" ${CONTAINER} ${IMAGE} ${CPID}
