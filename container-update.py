@@ -124,6 +124,9 @@ class ContainerHandlerCommand(dnf.cli.Command):
     a = self._get_args(args)
     valid, msg = self._validate_and_set_args(a)
     if valid:
+      print('[+] load data dry-run')
+      self._load_data()
+      self.base.reset()
       self._unshare_chroot()
       r = requests.get('https://google.com')
       print(r)
