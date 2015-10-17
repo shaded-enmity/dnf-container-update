@@ -48,7 +48,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
     nsdesc = []
     # keep the fd's open so we can `setns` _after_ chroot
     for ns in os.listdir('/proc/{0}/ns/'.format(self.pid)):
-      if ns == 'net':
+      if ns == 'user':
         continue
       nsdesc.append(open(os.path.join('/proc/{0}/ns'.format(self.pid), ns)))
     # chroot into the container
@@ -77,6 +77,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
       return True
 
   def _load_data(self):
+    print('[*] loading from PID: {0}'.format(os.getpid()))
     print('[*] reading repositories')
     self.base.read_all_repos()
     print('[*] filling sack')
@@ -128,14 +129,14 @@ class ContainerHandlerCommand(dnf.cli.Command):
       self._load_data()
       print('[-] data loaded, resetting base object')
       self.base.reset()
+      self._unshare_chroot()
+      self._load_data()
     else:
       print(msg)
       os.exit(os.EX_DATAERR)
 
   def run(self, args):
     print('[+] running ...')
-    self._unshare_chroot()
-    self._load_data()
     if self.action == 'update':
       if not self.args or self.args[0] == '*':
         self.base.upgrade_all()
