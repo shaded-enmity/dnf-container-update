@@ -3,7 +3,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import argparse
-import requests
 import dnf
 import dnf.cli
 import dnfpluginsextras
@@ -128,8 +127,6 @@ class ContainerHandlerCommand(dnf.cli.Command):
       self._load_data()
       self.base.reset()
       self._unshare_chroot()
-      r = requests.get('https://google.com')
-      print(r)
       self._load_data()
     else:
       print(msg)
