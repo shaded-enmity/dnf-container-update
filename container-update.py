@@ -82,10 +82,10 @@ class ContainerHandlerCommand(dnf.cli.Command):
   def _get_args(self, args):
     p = dnfpluginsextras.ArgumentParser(ContainerHandlerCommand.aliases[0])
     p.add_argument('--docker-id', action='store_true', help='interpret containerpid as container id')
-    p.add_argument('--docker-commit', default=None, help='name of the newly commited image')
+    p.add_argument('--docker-commit', default=None, help='name for the new image')
     p.add_argument('containerpid', help='pid of the process')
     p.add_argument('action', help='one of install, update or remove')
-    p.add_argument('arg0', nargs='?', help='optional package names')
+    p.add_argument('pkgs', nargs='?', help='optional package names')
     return p.parse_args(args)
 
   def _validate_and_set_args(self, parsed):
@@ -109,7 +109,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
     if parsed.action.lower() not in ['install', 'update', 'remove']:
       return False, 'Invalid action, see usage'
     self.action = parsed.action.lower()
-    self.args = parsed.arg0
+    self.args = parsed.pkgs
     if self.action in ['install', 'remove'] and len(self.args) == 0:
       return False, 'No packages specified to install/remove'
     return True, None
@@ -118,6 +118,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
     a = self._get_args(args)
     valid, msg = self._validate_and_set_args(a)
     if valid:
+      self.base.reset()
       self._unshare_chroot()
       # self.cli.demands.sack_activation = True
       # self.cli.demands.available_repos = True
