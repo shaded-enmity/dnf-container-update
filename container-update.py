@@ -55,7 +55,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
       libc.setns(ns.fileno(), 0)
       ns.close()
     # fork and exit the parent so that we're in the same PID namespace
-    npid = os.fork():
+    npid = os.fork()
     if npid:
       pid, exit = os.wait()
       # exit status indication: a 16-bit number, whose low byte is the signal number
@@ -109,6 +109,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
   def configure(self, args):
     a = self._get_args(args)
     valid, msg = self._validate_and_set_args(a)
+    dnfpluginsextras.logger.debug("In here!")
     if valid:
       self._unshare_chroot()
       self.cli.demands.sack_activation = True
@@ -118,7 +119,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
       print(msg)
       os.exit(os.EX_DATAERR)
 
-  def run(self, args)
+  def run(self, args):
     if self.action == 'update':
       if not self.args or self.args[0] == '*':
         self.base.upgrade_all()
