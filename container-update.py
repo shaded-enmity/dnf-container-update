@@ -118,7 +118,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
       self._unshare_chroot()
       # self.cli.demands.sack_activation = True
       # self.cli.demands.available_repos = True
-      self.load_data()
+      self._load_data()
     else:
       print(msg)
       os.exit(os.EX_DATAERR)
