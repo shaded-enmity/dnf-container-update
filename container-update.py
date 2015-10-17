@@ -55,7 +55,8 @@ class ContainerHandlerCommand(dnf.cli.Command):
     os.chroot('/proc/{0}/root/'.format(self.pid))
     for ns in nsdesc:
       # join namespace and close fd
-      assert libc.setns(ns.fileno(), 0) == 0
+      if libc.setns(ns.fileno(), 0) != 0:
+        print('[-] error entering: {0}'.format(ns.name))
       ns.close()
     # fork and exit the parent so that we're in the same PID namespace
     npid = os.fork()
