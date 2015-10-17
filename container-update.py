@@ -58,16 +58,19 @@ class ContainerHandlerCommand(dnf.cli.Command):
     # fork and exit the parent so that we're in the same PID namespace
     npid = os.fork()
     if npid:
+      print('[+] waiting for child: {0}'.format(npid))
       pid, exit = os.wait()
       # exit status indication: a 16-bit number, whose low byte is the signal number
       # that killed the process, and whose high byte is the exit status
       eccode = (exit >> 8) & 0xFF
       ecsig = exit & 0xFF
+      print('[-] exiting child: {0}, signal: {1}, error code: {2}'.format(npid, ecsig, eccode))
       if not ecsig:
         os._exit(eccode)
       else:
         raise dnf.exceptions.Error('child process killed with a signal: {0}'.format(ecsig))
     else:
+      print('[*] executing child: {0}'.format(os.getpid()))
       return True
 
   def _load_data(self):
@@ -82,7 +85,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
     p.add_argument('--docker-commit', default=None, help='name of the newly commited image')
     p.add_argument('containerpid', help='pid of the process')
     p.add_argument('action', help='one of install, update or remove')
-    p.add_argument('arg0', nargs='+', type=str)
+    p.add_argument('arg0', nargs='?', help='optional package names')
     return p.parse_args(args)
 
   def _validate_and_set_args(self, parsed):
