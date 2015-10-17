@@ -48,6 +48,8 @@ class ContainerHandlerCommand(dnf.cli.Command):
     nsdesc = []
     # keep the fd's open so we can `setns` _after_ chroot
     for ns in os.listdir('/proc/{0}/ns/'.format(self.pid)):
+      if ns == 'net':
+        continue
       nsdesc.append(open(os.path.join('/proc/{0}/ns'.format(self.pid), ns)))
     # chroot into the container
     os.chroot('/proc/{0}/root/'.format(self.pid))
