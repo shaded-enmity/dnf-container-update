@@ -57,7 +57,15 @@ class ContainerHandlerCommand(dnf.cli.Command):
     # fork and exit the parent so that we're in the same PID namespace
     npid = os.fork():
     if npid:
-      os.exit(os.EX_OK)
+      pid, exit = os.wait()
+      # exit status indication: a 16-bit number, whose low byte is the signal number
+      # that killed the process, and whose high byte is the exit status
+      eccode = (exit >> 8) & 0xFF
+      ecsig = exit & 0xFF
+      if not ecsig:
+        os.exit(eccode)
+      else:
+        raise dnf.exceptions.Error('child process killed with a signal: {0}'.format(ecsig))
     else:
       return True
 
