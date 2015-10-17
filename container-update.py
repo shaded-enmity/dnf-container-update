@@ -74,8 +74,11 @@ class ContainerHandlerCommand(dnf.cli.Command):
       return True
 
   def _load_data(self):
+    print('[*] reading repositories')
     self.base.read_all_repos()
+    print('[*] filling sack')
     self.base.fill_sack()
+    print('[*] reading comps')
     self.base.read_comps()
     #dnfpluginsextras.logger.debug(_("Error loading data:\n%s"), e.message)
 
