@@ -118,16 +118,14 @@ class ContainerHandlerCommand(dnf.cli.Command):
     a = self._get_args(args)
     valid, msg = self._validate_and_set_args(a)
     if valid:
-      self.base.reset()
       self._unshare_chroot()
-      # self.cli.demands.sack_activation = True
-      # self.cli.demands.available_repos = True
       self._load_data()
     else:
       print(msg)
       os.exit(os.EX_DATAERR)
 
   def run(self, args):
+    print('[+] running ...')
     if self.action == 'update':
       if not self.args or self.args[0] == '*':
         self.base.upgrade_all()
