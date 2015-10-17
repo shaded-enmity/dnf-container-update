@@ -6,6 +6,7 @@ import argparse
 import dnf
 import dnf.cli
 import dnfpluginsextras
+import os
 
 from ctypes import CDLL
 libc = CDLL(None, use_errno=True)
@@ -52,7 +53,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
     os.chroot('/proc/{0}/root/'.format(self.pid))
     for ns in nsdesc:
       # join namespace and close fd
-      libc.setns(ns.fileno(), 0)
+      assert libc.setns(ns.fileno(), 0) == 0
       ns.close()
     # fork and exit the parent so that we're in the same PID namespace
     npid = os.fork()
@@ -63,7 +64,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
       eccode = (exit >> 8) & 0xFF
       ecsig = exit & 0xFF
       if not ecsig:
-        os.exit(eccode)
+        os._exit(eccode)
       else:
         raise dnf.exceptions.Error('child process killed with a signal: {0}'.format(ecsig))
     else:
@@ -76,11 +77,12 @@ class ContainerHandlerCommand(dnf.cli.Command):
     #dnfpluginsextras.logger.debug(_("Error loading data:\n%s"), e.message)
 
   def _get_args(self, args):
-    p = dnfpluginsextras.ArgumentParser(aliases)
-    p.add_argument('--docker-id', action='store_true')
-    p.add_argument('CONTAINERPID')
-    p.add_argument('ACTION')
-    p.add_argument('ARG0', nargs='+', type=str)
+    p = dnfpluginsextras.ArgumentParser(ContainerHandlerCommand.aliases[0])
+    p.add_argument('--docker-id', action='store_true', help='interpret containerpid as container id')
+    p.add_argument('--docker-commit', default=None, help='name of the newly commited image')
+    p.add_argument('containerpid', help='pid of the process')
+    p.add_argument('action', help='one of install, update or remove')
+    p.add_argument('arg0', nargs='+', type=str)
     return p.parse_args(args)
 
   def _validate_and_set_args(self, parsed):
@@ -91,13 +93,16 @@ class ContainerHandlerCommand(dnf.cli.Command):
       if not stat:
         return False, 'Bad Docker container ID'
       parsed.containerpid = stat['State']['Pid']
-    try:
-      pid = int(parsed.containerpid.strip(), 10)
-    except ValueError:
-      pid = None
-    if not pid:
-      return False, 'Invalid CONTAINERPID'
-    self.pid = pid
+    if type(parsed.containerpid) is not int:
+      try:
+        pid = int(parsed.containerpid.strip(), 10)
+      except ValueError:
+        pid = None
+      if not pid:
+        return False, 'Invalid CONTAINERPID'
+      self.pid = pid
+    else:
+      self.pid = parsed.containerpid
     if parsed.action.lower() not in ['install', 'update', 'remove']:
       return False, 'Invalid action, see usage'
     self.action = parsed.action.lower()
@@ -109,11 +114,10 @@ class ContainerHandlerCommand(dnf.cli.Command):
   def configure(self, args):
     a = self._get_args(args)
     valid, msg = self._validate_and_set_args(a)
-    dnfpluginsextras.logger.debug("In here!")
     if valid:
       self._unshare_chroot()
-      self.cli.demands.sack_activation = True
-      self.cli.demands.available_repos = True
+      # self.cli.demands.sack_activation = True
+      # self.cli.demands.available_repos = True
       self.load_data()
     else:
       print(msg)
