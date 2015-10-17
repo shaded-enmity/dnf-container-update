@@ -125,15 +125,16 @@ class ContainerHandlerCommand(dnf.cli.Command):
     if valid:
       print('[+] load data dry-run')
       self._load_data()
+      print('[-] data loaded, resetting base object')
       self.base.reset()
-      self._unshare_chroot()
-      self._load_data()
     else:
       print(msg)
       os.exit(os.EX_DATAERR)
 
   def run(self, args):
     print('[+] running ...')
+    self._unshare_chroot()
+    self._load_data()
     if self.action == 'update':
       if not self.args or self.args[0] == '*':
         self.base.upgrade_all()
