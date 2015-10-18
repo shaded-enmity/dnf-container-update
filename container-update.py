@@ -24,6 +24,9 @@ Otherwise executing scriptlets would have effect on the
 host system.
 '''
 
+#+---------------------------+#
+#| Does not work as expected |#
+#+---------------------------+#
 def _cache_python():
   import abc as cache_abc
   import _abcoll as cache__abcoll
@@ -381,10 +384,11 @@ class ContainerHandlerCommand(dnf.cli.Command):
   def _unshare_chroot(self):
     nsdesc = []
     # keep the fd's open so we can `setns` _after_ chroot
-    for ns in os.listdir('/proc/{0}/ns/'.format(self.pid)):
+    nss = '/proc/{0}/ns'.format(self.pid)
+    for ns in os.listdir(nss):
       if ns == 'user':
         continue
-      nsdesc.append(open(os.path.join('/proc/{0}/ns'.format(self.pid), ns)))
+      nsdesc.append(open(os.path.join(nss, ns)))
     # chroot into the container
     os.chroot('/proc/{0}/root/'.format(self.pid))
     os.chdir('/')
@@ -460,7 +464,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
     a = self._get_args(args)
     valid, msg = self._validate_and_set_args(a)
     if valid:
-      _cache_python()
+      self.cached = _cache_python()
       self._unshare_chroot()
       self._load_data()
     else:
