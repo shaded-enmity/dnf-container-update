@@ -388,6 +388,8 @@ class ContainerHandlerCommand(dnf.cli.Command):
     for ns in os.listdir(nss):
       if ns == 'user':
         continue
+      if ns == 'pid':
+        self.pid_ns = open(os.path.join(nss, ns))
       nsdesc.append(open(os.path.join(nss, ns)))
     # chroot into the container
     os.chroot('/proc/{0}/root/'.format(self.pid))
@@ -398,7 +400,7 @@ class ContainerHandlerCommand(dnf.cli.Command):
         print('[-] error entering: {0}'.format(ns.name))
       ns.close()
     # fork and exit the parent so that we're in the same PID namespace
-    npid = os.fork()
+    '''npid = os.fork()
     if npid:
       print('[+] waiting for child: {0}'.format(npid))
       pid, exit = os.wait()
@@ -413,7 +415,8 @@ class ContainerHandlerCommand(dnf.cli.Command):
         raise dnf.exceptions.Error('child process killed with a signal: {0}'.format(ecsig))
     else:
       print('[*] executing child: {0}'.format(os.getpid()))
-      return True
+      return True'''
+    return True
 
   def _load_data(self):
     print('[*] loading from PID: {0}'.format(os.getpid()))
@@ -495,6 +498,25 @@ class ContainerHandlerCommand(dnf.cli.Command):
           else:
             raise dnf.exceptions.PackagesNotInstalledError(package=n)
 
-      self.base.resolve(True)
-      self.base.download_packages(self.base.transaction.install_set)
+    self.base.resolve(True)
+    self.base.download_packages(self.base.transaction.install_set)
+
+    assert libc.setns(self.pid_ns, 0) == 0
+    npid = os.fork()
+    if npid:
+      print('[+] waiting for child: {0}'.format(npid))
+      pid, exit = os.wait()
+      # exit status indication: a 16-bit number, whose low byte is the signal number
+      # that killed the process, and whose high byte is the exit status
+      eccode = (exit >> 8) & 0xFF
+      ecsig = exit & 0xFF
+      print('[-] exiting child: {0}, signal: {1}, error code: {2}'.format(npid, ecsig, eccode))
+      if not ecsig:
+        os._exit(eccode)
+      else:
+        raise dnf.exceptions.Error('child process killed with a signal: {0}'.format(ecsig))
+    else:
+      print('[*] executing child (transaction): {0}'.format(os.getpid()))
       self.base.do_transaction()
+
+      return True
